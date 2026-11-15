@@ -1,17 +1,42 @@
-[app]
+name: Build Android APK
 
-title = Ramid3bol
-package.name = ramid3bol
-package.domain = org.ramid3bol
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
-version = 1.0
-requirements = python3,kivy
-orientation = portrait
-fullscreen = 0
-android.permissions = INTERNET
-android.accept_sdk_license = True
-android.archs = arm64-v8a
-android.ndk = 25b
-android.api = 33
-android.minapi = 21
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y \
+              git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config \
+              zlib1g-dev libncurses5-dev libncursesw5-dev libsqlite3-dev libreadline-dev \
+              libssl-dev libffi-dev curl patch
+
+      - name: Install Buildozer and Cython
+        run: |
+          pip install --upgrade pip
+          pip install Cython==0.29.36 buildozer
+
+      - name: Build with Buildozer
+        run: |
+          buildozer -v android debug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: bin/*.apk
